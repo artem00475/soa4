@@ -1,0 +1,2 @@
+keytool -genkeypair -alias certificate -keyalg RSA -keysize 2048 -keystore certificate.jks -validity 3650
+keytool -exportcert -alias certificate -keypass certificate -keystore certificate.jks -rfc -file certificate.pem
