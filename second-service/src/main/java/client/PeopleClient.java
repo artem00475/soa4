@@ -10,7 +10,7 @@ import java.util.List;
 
 public class PeopleClient {
     private static final String REST_URI
-            = "https://localhost:8080";
+            = "https://localhost:8080/api/v1";
 
     private Client getClient() {
         return ClientBuilder.newBuilder()

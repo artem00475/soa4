@@ -23,6 +23,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -71,7 +72,8 @@ public class PeopleController {
             return ResponseEntity.ok(personService.getAll(limit, offset, sort, filter));
         } catch (PropertyReferenceException ex) {
             return ResponseEntity.badRequest().body(new ErrorMessage("Not valid parameters:sort[" + ex.getPropertyName() + "]"));
-        } catch (InvalidDataAccessApiUsageException | JpaSystemException | IllegalArgumentException ex) {
+        } catch (InvalidDataAccessApiUsageException | JpaSystemException | IllegalArgumentException |
+                 DateTimeParseException ex) {
             return ResponseEntity.badRequest().body(new ErrorMessage("Not valid parameters:filter"));
         }
     }

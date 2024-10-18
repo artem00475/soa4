@@ -12,7 +12,7 @@ public class PeopleService {
         peopleClient = new PeopleClient();
     }
 
-    public String getPercentage(String color) {
+    public float getPercentage(String color) {
         List<String> colors = peopleClient.getColors();
         assert color != null;
         if (color.isEmpty() | !colors.contains(color.toUpperCase())) {
@@ -21,7 +21,7 @@ public class PeopleService {
         int total = peopleClient.getTotal();
         int countByColor = peopleClient.getCountByHairColor(color);
         float percent = (float) countByColor / total * 100;
-        return percent + "%";
+        return percent;
     }
 
     public int getCount(String nationality, String color) {

@@ -21,7 +21,7 @@ public class DemographyResource {
     @Path("/hair-color/{hair-color}/percentage")
     public Response getPercentageByHairColor(@PathParam("hair-color") String color) {
         return Response.ok(
-                new ResultDTO(peopleService.getPercentage(color))
+                new ResultDTO(String.valueOf(peopleService.getPercentage(color)))
         ).build();
     }
 
