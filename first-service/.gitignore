@@ -34,3 +34,4 @@ build/
 /.gitignore
 /mvnw
 /mvnw.cmd
+/src/main/resources/keystore/

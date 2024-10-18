@@ -34,7 +34,8 @@ public class PersonSpecification implements Specification<Person> {
                     case GREATER_OR_EQUAL ->
                             cb.greaterThanOrEqualTo(path, value);
                     case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
-                    case LIKE, EQUAL -> cb.equal(path, value);
+                    case LIKE -> cb.like(path.as(String.class), "%" + value + "%");
+                    case EQUAL -> cb.equal(path, value);
                 };
             }
             case CREATION_DATE -> {
@@ -46,7 +47,8 @@ public class PersonSpecification implements Specification<Person> {
                     case GREATER_OR_EQUAL ->
                             cb.greaterThanOrEqualTo(path, value);
                     case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
-                    case LIKE, EQUAL -> cb.equal(path, value);
+                    case LIKE -> cb.like(path.as(String.class), "%" + value + "%");
+                    case EQUAL -> cb.equal(path, value);
                 };
             }
             case EYE_COLOR, HAIR_COLOR, NATIONALITY -> {
@@ -71,7 +73,8 @@ public class PersonSpecification implements Specification<Person> {
                     case GREATER_OR_EQUAL ->
                             cb.greaterThanOrEqualTo(path, value);
                     case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
-                    case LIKE, EQUAL -> cb.equal(path, value);
+                    case LIKE -> cb.like(path.as(String.class), "%" + value + "%");
+                    case EQUAL -> cb.equal(path, value);
                 };
             }
             case COORDINATES_Y -> {
@@ -83,7 +86,8 @@ public class PersonSpecification implements Specification<Person> {
                     case GREATER_OR_EQUAL ->
                             cb.greaterThanOrEqualTo(path, value);
                     case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
-                    case LIKE, EQUAL -> cb.equal(path, value);
+                    case LIKE -> cb.like(path.as(String.class), "%" + value + "%");
+                    case EQUAL -> cb.equal(path, value);
                 };
             }
             case LOCATION_X -> {
@@ -95,7 +99,8 @@ public class PersonSpecification implements Specification<Person> {
                     case GREATER_OR_EQUAL ->
                             cb.greaterThanOrEqualTo(path, value);
                     case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
-                    case LIKE, EQUAL -> cb.equal(path, value);
+                    case LIKE -> cb.like(path.as(String.class), "%" + value + "%");
+                    case EQUAL -> cb.equal(path, value);
                 };
             }
             default -> {
