@@ -5,19 +5,16 @@ import itmo.tuchin.nikitin.first_service.entity.*;
 import itmo.tuchin.nikitin.first_service.repository.CoordinatesRepository;
 import itmo.tuchin.nikitin.first_service.repository.LocationRepository;
 import itmo.tuchin.nikitin.first_service.repository.PersonRepository;
-import itmo.tuchin.nikitin.first_service.specification.PersonSpecification;
+import itmo.tuchin.nikitin.first_service.specification.PersonFilter;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
-import org.springframework.core.MethodParameter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -57,7 +54,7 @@ public class PersonService {
     public PeopleResponse getAll(int limit, int offset, Map<String, Sort.Direction> sort, Map<String, String> filter) {
         List<Sort.Order> sortList = new ArrayList<>();
         sort.forEach((k, v) -> sortList.add(Sort.Order.by(k).with(v)));
-        Page<Person> personPage = personRepository.findAll(PersonSpecification.filterBy(filter),PageRequest.of(offset, limit, Sort.by(sortList)));
+        Page<Person> personPage = personRepository.findAll(PersonFilter.filterBy(filter),PageRequest.of(offset, limit, Sort.by(sortList)));
         List<PersonResponse> personResponses = new ArrayList<>();
         personPage.get().forEach(person -> personResponses.add(getResponse(person)));
         return new PeopleResponse(personResponses, (int) personPage.getTotalElements());

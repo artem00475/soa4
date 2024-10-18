@@ -1,95 +1,115 @@
 package itmo.tuchin.nikitin.first_service.specification;
 
 import itmo.tuchin.nikitin.first_service.entity.Person;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
+import lombok.AllArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-public class PersonSpecification {
-    public static final String NAME = "name";
-    public static final String HEIGHT = "height";
-    public static final String CREATION_DATE = "creationDate";
-    public static final String EYE_COLOR = "eyeColor";
-    public static final String HAIR_COLOR = "hairColor";
-    public static final String NATIONALITY = "nationality";
-    public static final String ID = "id";
-    public static final String COORDINATES_X = "coordinates.x";
-    public static final String COORDINATES_Y = "coordinates.y";
-    public static final String LOCATION_X = "location.x";
-    public static final String LOCATION_Y = "location.y";
-    public static final String LOCATION_NAME = "location.name";
+@AllArgsConstructor
+public class PersonSpecification implements Specification<Person> {
 
+    private PersonFieldFilter filter;
 
-    private PersonSpecification() {
-
-    }
-
-    public static Specification<Person> filterBy(Map<String, String> filter) {
-        return Specification
-                .where(join())
-                .and(filterField(NAME, filter.get(NAME)))
-                .and(filterField(HEIGHT, filter.get(HEIGHT)))
-                .and(filterField(CREATION_DATE, filter.get(CREATION_DATE)))
-                .and(filterField(EYE_COLOR, filter.get(EYE_COLOR)))
-                .and(filterField(NATIONALITY, filter.get(NATIONALITY)))
-                .and(filterField(ID, filter.get(ID)))
-                .and(filterField(HAIR_COLOR, filter.get(HAIR_COLOR)))
-                .and(filterField(COORDINATES_X, filter.get(COORDINATES_X)))
-                .and(filterField(COORDINATES_Y, filter.get(COORDINATES_Y)))
-                .and(filterField(LOCATION_X, filter.get(LOCATION_X)))
-                .and(filterField(LOCATION_Y, filter.get(LOCATION_Y)))
-                .and(filterField(LOCATION_NAME, filter.get(LOCATION_NAME)));
-    }
-
-    private static Specification<Person> join() {
-        return (root, criteriaQuery, criteriaBuilder) -> {
-            if (Long.class != criteriaQuery.getResultType()) {
-                root.fetch("coordinates", JoinType.LEFT);
-                root.fetch("location", JoinType.LEFT);
-            }
-            return criteriaBuilder.conjunction();
-        };
-    }
-
-    private static Path resolvePath(Root<Person> root, String field) {
-        String[] fieldSplit = field.split("\\.");
+    private <T> Path<T> resolvePath(Root<Person> root) {
+        String[] fieldSplit = filter.getName().toString().split("\\.");
         if (fieldSplit.length == 2) {
-           return root.get(fieldSplit[0]).get(fieldSplit[1]);
+            return root.get(fieldSplit[0]).get(fieldSplit[1]);
         } else {
-           return root.get(fieldSplit[0]);
+            return root.get(fieldSplit[0]);
         }
     }
 
-    private static Specification<Person> filterField(String field, String value) {
-        if (value == null) {
-            return (root, query, cb) -> cb.conjunction();
-        }
-        Pattern pattern = Pattern.compile("^(|>|<|>=|<=|~|=)([\\w-]+)$");
-        Matcher matcher = pattern.matcher(value);
-        if (!matcher.find()) {
-            return (root, query, cb) -> cb.conjunction();
-        }
-        String val = matcher.group(2);
-        return switch (matcher.group(1)) {
-            case ">" ->
-                    ((root, query, cb) -> val == null || val.isEmpty() ? cb.conjunction() : cb.greaterThan(resolvePath(root, field), val));
-            case ">=" ->
-                    ((root, query, cb) -> val == null || val.isEmpty() ? cb.conjunction() : cb.greaterThanOrEqualTo(resolvePath(root, field), val));
-            case "<" ->
-                    ((root, query, cb) -> val == null || val.isEmpty() ? cb.conjunction() : cb.lessThan(resolvePath(root, field), val));
-            case "<=" ->
-                    ((root, query, cb) -> val == null || val.isEmpty() ? cb.conjunction() : cb.lessThanOrEqualTo(resolvePath(root, field), LocalDate.parse(val)));
-            case "~" ->
-                    ((root, query, cb) -> val == null || val.isEmpty() ? cb.conjunction() : cb.like(resolvePath(root, field), "%" + val + "%"));
-            default ->
-                    ((root, query, cb) -> val == null || val.isEmpty() ? cb.conjunction() : cb.equal(resolvePath(root, field), val));
+    @Override
+    public Predicate toPredicate(@NotNull Root<Person> root, CriteriaQuery<?> query, @NotNull CriteriaBuilder cb) {
+        return switch (filter.getName()) {
+            case HEIGHT, ID -> {
+                Path<Integer> path = resolvePath(root);
+                Integer value = Integer.valueOf(filter.getValue());
+                yield switch (filter.getOperation()) {
+                    case GREATER -> cb.greaterThan(path, value);
+                    case LESS -> cb.lessThan(path, value);
+                    case GREATER_OR_EQUAL ->
+                            cb.greaterThanOrEqualTo(path, value);
+                    case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
+                    case LIKE, EQUAL -> cb.equal(path, value);
+                };
+            }
+            case CREATION_DATE -> {
+                Path<LocalDate> path = resolvePath(root);
+                LocalDate value = LocalDate.parse(filter.getValue());
+                yield switch (filter.getOperation()) {
+                    case GREATER -> cb.greaterThan(path, value);
+                    case LESS -> cb.lessThan(path, value);
+                    case GREATER_OR_EQUAL ->
+                            cb.greaterThanOrEqualTo(path, value);
+                    case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
+                    case LIKE, EQUAL -> cb.equal(path, value);
+                };
+            }
+            case EYE_COLOR, HAIR_COLOR, NATIONALITY -> {
+                Path<String> path = resolvePath(root);
+                String value = filter.getValue().toUpperCase().strip();
+                yield switch (filter.getOperation()) {
+                    case GREATER -> cb.greaterThan(path, value);
+                    case LESS -> cb.lessThan(path, value);
+                    case GREATER_OR_EQUAL ->
+                            cb.greaterThanOrEqualTo(path, value);
+                    case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
+                    case LIKE -> cb.like(path, "%" + value + "%");
+                    case EQUAL -> cb.equal(path, value);
+                };
+            }
+            case COORDINATES_X, LOCATION_Y -> {
+                Path<Double> path = resolvePath(root);
+                Double value = Double.valueOf(filter.getValue());
+                yield switch (filter.getOperation()) {
+                    case GREATER -> cb.greaterThan(path, value);
+                    case LESS -> cb.lessThan(path, value);
+                    case GREATER_OR_EQUAL ->
+                            cb.greaterThanOrEqualTo(path, value);
+                    case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
+                    case LIKE, EQUAL -> cb.equal(path, value);
+                };
+            }
+            case COORDINATES_Y -> {
+                Path<Long> path = resolvePath(root);
+                Long value = Long.valueOf(filter.getValue());
+                yield switch (filter.getOperation()) {
+                    case GREATER -> cb.greaterThan(path, value);
+                    case LESS -> cb.lessThan(path, value);
+                    case GREATER_OR_EQUAL ->
+                            cb.greaterThanOrEqualTo(path, value);
+                    case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
+                    case LIKE, EQUAL -> cb.equal(path, value);
+                };
+            }
+            case LOCATION_X -> {
+                Path<Float> path = resolvePath(root);
+                Float value = Float.valueOf(filter.getValue());
+                yield switch (filter.getOperation()) {
+                    case GREATER -> cb.greaterThan(path, value);
+                    case LESS -> cb.lessThan(path, value);
+                    case GREATER_OR_EQUAL ->
+                            cb.greaterThanOrEqualTo(path, value);
+                    case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
+                    case LIKE, EQUAL -> cb.equal(path, value);
+                };
+            }
+            default -> {
+                Path<String> path = resolvePath(root);
+                String value = filter.getValue();
+                yield switch (filter.getOperation()) {
+                    case GREATER -> cb.greaterThan(path, value);
+                    case LESS -> cb.lessThan(path, value);
+                    case GREATER_OR_EQUAL -> cb.greaterThanOrEqualTo(path, value);
+                    case LESS_OR_EQUAL -> cb.lessThanOrEqualTo(path, value);
+                    case LIKE -> cb.like(path, "%" + value + "%");
+                    case EQUAL -> cb.equal(path, value);
+                };
+            }
         };
     }
 }
-

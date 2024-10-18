@@ -16,7 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.http.converter.json.GsonBuilderUtils;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
@@ -66,14 +65,13 @@ public class PeopleController {
                     filter.put(k, v);
                 }
             });
-            System.out.println(filter);
             if (!errors.isEmpty()) {
                 return ResponseEntity.badRequest().body(new ErrorMessage("Not valid parameters:" + String.join(",", errors)));
             }
             return ResponseEntity.ok(personService.getAll(limit, offset, sort, filter));
         } catch (PropertyReferenceException ex) {
             return ResponseEntity.badRequest().body(new ErrorMessage("Not valid parameters:sort[" + ex.getPropertyName() + "]"));
-        } catch (InvalidDataAccessApiUsageException | JpaSystemException ex) {
+        } catch (InvalidDataAccessApiUsageException | JpaSystemException | IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(new ErrorMessage("Not valid parameters:filter"));
         }
     }
@@ -161,7 +159,7 @@ public class PeopleController {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorMessage> parseJSON(HttpMessageNotReadableException ex) {
+    public ResponseEntity<ErrorMessage> parseJSON() {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorMessage("JSON parse error"));
     }
 

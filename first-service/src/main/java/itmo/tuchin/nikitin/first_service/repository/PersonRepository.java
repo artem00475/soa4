@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -19,5 +20,6 @@ public interface PersonRepository extends JpaRepository<Person, Integer>, JpaSpe
     @Query("SELECT AVG(p.height) from Person p")
     Double getAverageHeight();
 
+    @EntityGraph(attributePaths = {"coordinates", "location"})
     @NotNull Page<Person> findAll(Specification<Person> filter, @NotNull Pageable pageable);
 }
