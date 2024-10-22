@@ -2,6 +2,7 @@ package itmo.tuchin.nikitin.first_service.service;
 
 import itmo.tuchin.nikitin.first_service.dto.*;
 import itmo.tuchin.nikitin.first_service.entity.*;
+import itmo.tuchin.nikitin.first_service.exceptions.InvalidFilterException;
 import itmo.tuchin.nikitin.first_service.repository.CoordinatesRepository;
 import itmo.tuchin.nikitin.first_service.repository.LocationRepository;
 import itmo.tuchin.nikitin.first_service.repository.PersonRepository;
@@ -10,6 +11,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,53 +32,23 @@ public class PersonService {
     private final PersonRepository personRepository;
     private final CoordinatesRepository coordinatesRepository;
     private final LocationRepository locationRepository;
-
-    private Person setPersonFields(Person person, PersonDTO personDTO, LocalDate date, Coordinates coordinates, Location location) {
-        person.setCreationDate(date);
-        person.setName(personDTO.getName());
-        person.setHeight(personDTO.getHeight());
-        person.setHairColor(Color.valueOf(personDTO.getHairColor()));
-        person.setEyeColor(Color.valueOf(personDTO.getEyeColor()));
-        person.setNationality(Country.valueOf(personDTO.getNationality()));
-        coordinates.setX(personDTO.getCoordinates().getX());
-        coordinates.setY(personDTO.getCoordinates().getY());
-        coordinates = coordinatesRepository.save(coordinates);
-        person.setCoordinates(coordinates);
-        location.setName(personDTO.getLocation().getName());
-        location.setX(personDTO.getLocation().getX());
-        location.setY(personDTO.getLocation().getY());
-        location = locationRepository.save(location);
-        person.setLocation(location);
-        return person;
-    }
+    private final ModelMapper modelMapper;
 
     public PeopleResponse getAll(int limit, int offset, Map<String, Sort.Direction> sort, Map<String, String> filter) {
         List<Sort.Order> sortList = new ArrayList<>();
         sort.forEach((k, v) -> sortList.add(Sort.Order.by(k).with(v)));
-        Page<Person> personPage = personRepository.findAll(PersonFilter.filterBy(filter),PageRequest.of(offset, limit, Sort.by(sortList)));
-        List<PersonResponse> personResponses = new ArrayList<>();
-        personPage.get().forEach(person -> personResponses.add(getResponse(person)));
-        return new PeopleResponse(personResponses, (int) personPage.getTotalElements());
-    }
-
-    public PersonResponse add(PersonDTO personDTO) {
-        Person person = new Person();
-        person = personRepository.save(setPersonFields(person, personDTO, LocalDate.now(), new Coordinates(), new Location()));
-        return getResponse(person);
+        try {
+            Page<Person> personPage = personRepository.findAll(PersonFilter.filterBy(filter), PageRequest.of(offset, limit, Sort.by(sortList)));
+            List<PersonResponse> personResponses = new ArrayList<>();
+            personPage.get().forEach(person -> personResponses.add(getResponse(person)));
+            return new PeopleResponse(personResponses, (int) personPage.getTotalElements());
+        } catch (Exception ex) {
+            throw new InvalidFilterException("Not valid parameters:filter");
+        }
     }
 
     private PersonResponse getResponse(@NotNull Person person) {
-        return new PersonResponse(
-                person.getId(),
-                person.getName(),
-                new CoordinatesDTO(person.getCoordinates().getX(), person.getCoordinates().getY()),
-                person.getCreationDate().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                person.getHeight(),
-                person.getEyeColor().name(),
-                person.getHairColor().name(),
-                person.getNationality().name(),
-                new LocationDTO(person.getLocation().getX(), person.getLocation().getY(), person.getLocation().getName())
-        );
+        return modelMapper.map(person, PersonResponse.class);
     }
 
     public PersonResponse get(int id) {
@@ -88,12 +59,26 @@ public class PersonService {
         return getResponse(person.get());
     }
 
+    public PersonResponse add(PersonDTO personDTO) {
+        Person person = modelMapper.map(personDTO, Person.class);
+        person.setCreationDate(LocalDate.now());
+        person.setCoordinates(coordinatesRepository.save(person.getCoordinates()));
+        if (person.getLocation() != null) {
+            person.setLocation(locationRepository.save(person.getLocation()));
+        }
+        return getResponse(personRepository.save(person));
+    }
+
     public void delete(int id) {
         Optional<Person> person = personRepository.findPersonById(id);
         if (person.isEmpty()) {
             throw new EntityNotFoundException();
         }
         personRepository.delete(person.get());
+        coordinatesRepository.delete(person.get().getCoordinates());
+        if (person.get().getLocation() != null) {
+            locationRepository.delete(person.get().getLocation());
+        }
     }
 
     public void patch(int id, PersonUpdateDTO personUpdateDTO) {
@@ -102,48 +87,9 @@ public class PersonService {
             throw new EntityNotFoundException();
         }
         Person person = optionalPerson.get();
-        if (personUpdateDTO.getName() != null && !personUpdateDTO.getName().isEmpty()) {
-            person.setName(personUpdateDTO.getName());
-        }
-        if (personUpdateDTO.getEyeColor() != null) {
-            person.setEyeColor(Color.valueOf(personUpdateDTO.getEyeColor()));
-        }
-        if (personUpdateDTO.getHairColor() != null) {
-            person.setHairColor(Color.valueOf(personUpdateDTO.getHairColor()));
-        }
-        if (personUpdateDTO.getNationality() != null) {
-            person.setNationality(Country.valueOf(personUpdateDTO.getNationality()));
-        }
-        if (personUpdateDTO.getHeight() != null) {
-            person.setHeight(personUpdateDTO.getHeight());
-        }
-        CoordinatesUpdateDTO coordinatesDTO = personUpdateDTO.getCoordinates();
-        if (coordinatesDTO != null) {
-            Coordinates coordinates = person.getCoordinates();
-            if (!coordinatesDTO.getX().isNaN()) {
-                coordinates.setX(coordinatesDTO.getX());
-            }
-            if (coordinatesDTO.getY() != 0L) {
-                coordinates.setY(coordinatesDTO.getY());
-            }
-            coordinates = coordinatesRepository.save(coordinates);
-            person.setCoordinates(coordinates);
-        }
-        LocationUpdateDTO locationDTO = personUpdateDTO.getLocation();
-        if (locationDTO != null) {
-            Location location = person.getLocation();
-            if (!Float.isNaN(locationDTO.getX())) {
-                location.setX(locationDTO.getX());
-            }
-            if (!Double.isNaN(locationDTO.getY())) {
-                location.setY(locationDTO.getY());
-            }
-            if (locationDTO.getName() != null && !locationDTO.getName().isEmpty()) {
-                location.setName(locationDTO.getName());
-            }
-            location = locationRepository.save(location);
-            person.setLocation(location);
-        }
+        modelMapper.getConfiguration().setSkipNullEnabled(true);
+        modelMapper.map(personUpdateDTO, person);
+        modelMapper.getConfiguration().setSkipNullEnabled(false);
         personRepository.save(person);
     }
 
@@ -153,7 +99,8 @@ public class PersonService {
             throw new EntityNotFoundException();
         }
         Person person = personOptional.get();
-        personRepository.save(setPersonFields(person, personDTO, person.getCreationDate(), person.getCoordinates(), person.getLocation()));
+        modelMapper.map(personDTO, person);
+        personRepository.save(person);
     }
 
     public String countHeight(@Valid @NotNull @Positive Integer height) {

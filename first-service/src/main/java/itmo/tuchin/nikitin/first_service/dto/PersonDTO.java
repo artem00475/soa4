@@ -3,6 +3,7 @@ package itmo.tuchin.nikitin.first_service.dto;
 import itmo.tuchin.nikitin.first_service.validation.constraint.ColorEnum;
 import itmo.tuchin.nikitin.first_service.validation.constraint.CountryEnum;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -21,7 +22,8 @@ public class PersonDTO {
 
     @NotNull
     @Positive
-    private Integer height; //Поле не может быть null, Значение поля должно быть больше 0
+    @Max(Integer.MAX_VALUE)
+    private String height; //Поле не может быть null, Значение поля должно быть больше 0
 
     @NotEmpty
     @ColorEnum
@@ -31,11 +33,9 @@ public class PersonDTO {
     @ColorEnum
     private String hairColor; //Поле не может быть null
 
-    @NotEmpty
     @CountryEnum
     private String nationality; //Поле может быть null
 
-    @NotNull
     @Valid
     private LocationDTO location; //Поле может быть null
 }

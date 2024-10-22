@@ -3,6 +3,8 @@ package itmo.tuchin.nikitin.first_service.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
@@ -12,10 +14,11 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.TABLE)
     private int id; //Значение поля должно быть больше 0, Значение этого поля должно быть уникальным, Значение этого поля должно генерироваться автоматически
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String name; //Поле не может быть null, Строка не может быть пустой
 
     @OneToOne(fetch = FetchType.EAGER)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
     private Coordinates coordinates; //Поле не может быть null
 
     @Column(nullable = false)
@@ -34,10 +37,11 @@ public class Person {
     @Enumerated(value = EnumType.STRING)
     private Color hairColor; //Поле не может быть null
 
-    @Column(nullable = false)
+    @Column()
     @Enumerated(value = EnumType.STRING)
     private Country nationality; //Поле может быть null
 
     @OneToOne(fetch = FetchType.EAGER)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Location location; //Поле может быть null
 }

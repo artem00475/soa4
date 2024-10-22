@@ -1,17 +1,17 @@
 package itmo.tuchin.nikitin.first_service.dto;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
 public class CoordinatesUpdateDTO {
-    @Max(682)
-    private Double x; //Максимальное значение поля: 682, Поле не может быть null
+    @DecimalMax(value = "682.0")
+    @DecimalMin(value = "-1.7976931348623157e+308")
+    private String x; //Максимальное значение поля: 682, Поле не может быть null
 
     @Min(-984)
-    private long y; //Значение поля должно быть больше -985
+    @Max(Integer.MAX_VALUE)
+    private String y; //Значение поля должно быть больше -985
 }

@@ -1,9 +1,6 @@
 package itmo.tuchin.nikitin.first_service.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Entity
@@ -18,6 +15,6 @@ public class Location {
 
     private double y;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String name; //Строка не может быть пустой, Поле может быть null
 }

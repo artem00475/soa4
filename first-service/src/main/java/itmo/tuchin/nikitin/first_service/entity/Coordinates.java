@@ -13,8 +13,8 @@ public class Coordinates {
     @GeneratedValue(strategy = GenerationType.TABLE)
     private int id;
 
-    @Max(682)
     @Column(nullable = false)
+    @Max(682)
     private Double x; //Максимальное значение поля: 682, Поле не может быть null
 
     @Min(-984)
