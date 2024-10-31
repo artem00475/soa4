@@ -1,6 +1,7 @@
 package itmo.tuchin.nikitin.first_service.specification;
 
 public enum Operations {
+    NONE(""),
     GREATER(">"),
     LESS("<"),
     GREATER_OR_EQUAL(">="),
@@ -16,6 +17,6 @@ public enum Operations {
                 return v;
             }
         }
-        throw new IllegalArgumentException("Unknown enum value " + value);
+        throw new IllegalArgumentException(value);
     }
 }

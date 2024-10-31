@@ -16,6 +16,6 @@ public class CoordinatesDTO {
     private String x; //Максимальное значение поля: 682, Поле не может быть null
 
     @Min(-984)
-    @Max(Integer.MAX_VALUE)
+    @Max(Long.MAX_VALUE)
     private String y; //Значение поля должно быть больше -985
 }

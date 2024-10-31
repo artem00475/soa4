@@ -6,26 +6,29 @@ import itmo.tuchin.nikitin.first_service.exceptions.InvalidFilterException;
 import itmo.tuchin.nikitin.first_service.repository.CoordinatesRepository;
 import itmo.tuchin.nikitin.first_service.repository.LocationRepository;
 import itmo.tuchin.nikitin.first_service.repository.PersonRepository;
+import itmo.tuchin.nikitin.first_service.specification.Fields;
 import itmo.tuchin.nikitin.first_service.specification.PersonFilter;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.internal.Pair;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Validated
 public class PersonService {
 
@@ -33,18 +36,38 @@ public class PersonService {
     private final CoordinatesRepository coordinatesRepository;
     private final LocationRepository locationRepository;
     private final ModelMapper modelMapper;
+    private final Pattern sortPattern = Pattern.compile("^sort\\[(.+)\\]$");
 
-    public PeopleResponse getAll(int limit, int offset, Map<String, Sort.Direction> sort, Map<String, String> filter) {
-        List<Sort.Order> sortList = new ArrayList<>();
-        sort.forEach((k, v) -> sortList.add(Sort.Order.by(k).with(v)));
-        try {
-            Page<Person> personPage = personRepository.findAll(PersonFilter.filterBy(filter), PageRequest.of(offset, limit, Sort.by(sortList)));
-            List<PersonResponse> personResponses = new ArrayList<>();
-            personPage.get().forEach(person -> personResponses.add(getResponse(person)));
-            return new PeopleResponse(personResponses, (int) personPage.getTotalElements());
-        } catch (Exception ex) {
-            throw new InvalidFilterException("Not valid parameters:filter");
+    private Pair<String, Sort.Direction> parseSortParam(String k, String v) {
+        Fields.findByString(k);
+        v = v.toUpperCase().trim();
+        return Pair.of(k, Sort.Direction.valueOf(v));
+    }
+
+    public PeopleResponse getAll(int limit, int offset, Map<String, String> paramsMap) {
+        List<String> errors = new LinkedList<>();
+        List<Sort.Order> sortList = new LinkedList<>();
+        List<Specification<Person>> specificationList = new LinkedList<>();
+        paramsMap.forEach((k, v) -> {
+            try {
+                Matcher isSortParam = sortPattern.matcher(k);
+                if (isSortParam.find()) {
+                    Pair<String, Sort.Direction> sortParam = parseSortParam(isSortParam.group(1), v);
+                    sortList.add(Sort.Order.by(sortParam.getLeft()).with(sortParam.getRight()));
+                } else if (!k.equals("limit") && !k.equals("offset")) {
+                    specificationList.add(PersonFilter.getPersonSpecificationForField(k, v));
+                }
+            } catch (Throwable e) {
+                errors.add(k);
+            }
+        });
+        if (!errors.isEmpty()) {
+            throw new InvalidFilterException("Not valid parameters:" + errors.stream().distinct().collect(Collectors.joining(",")));
         }
+        Page<Person> personPage = personRepository.findAll(PersonFilter.filterBy(specificationList), PageRequest.of(offset, limit, Sort.by(sortList)));
+        List<PersonResponse> personResponses = new ArrayList<>();
+        personPage.get().forEach(person -> personResponses.add(getResponse(person)));
+        return new PeopleResponse(personResponses, (int) personPage.getTotalElements());
     }
 
     private PersonResponse getResponse(@NotNull Person person) {

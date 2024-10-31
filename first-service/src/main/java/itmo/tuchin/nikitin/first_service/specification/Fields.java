@@ -22,6 +22,6 @@ public enum Fields {
                 return v;
             }
         }
-        throw new IllegalArgumentException("Unknown enum value " + value);
+        throw new IllegalArgumentException(value);
     }
 }

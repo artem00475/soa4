@@ -6,12 +6,8 @@ import itmo.tuchin.nikitin.first_service.service.PersonService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Null;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,11 +18,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -42,37 +34,16 @@ public class PeopleController {
 
     @GetMapping
     public ResponseEntity<PeopleResponse> getPeople(
-            @Valid @Positive @RequestParam(required = false, defaultValue = "10") int limit,
-            @Valid @PositiveOrZero @RequestParam(required = false, defaultValue = "0") int offset,
+            @Valid @Positive @Max(Integer.MAX_VALUE) @RequestParam(required = false, defaultValue = "10") int limit,
+            @Valid @PositiveOrZero @Max(Integer.MAX_VALUE) @RequestParam(required = false, defaultValue = "0") int offset,
             @RequestParam(required = false) Map<String, String> map
     ) {
-        List<String> errors = new LinkedList<>();
-        Map<String, Sort.Direction> sort = new HashMap<>();
-        Map<String, String> filter = new HashMap<>();
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^sort\\[(.+)\\]$");
-        map.forEach((k, v) -> {
-            Matcher matcher = pattern.matcher(k);
-            if (matcher.find()) {
-                v = v.toUpperCase().trim();
-                if (v.equals("ASC") | v.equals("DESC")) {
-                    sort.put(matcher.group(1), Sort.Direction.valueOf(v));
-                } else {
-                    errors.add(k);
-                }
-            } else if (!k.equals("limit") && !k.equals("offset")){
-                filter.put(k, v);
-            }
-        });
-        if (!errors.isEmpty()) {
-            throw new InvalidFilterException("Not valid parameters:" + String.join(",", errors));
-        }
-        return ResponseEntity.ok(personService.getAll(limit, offset, sort, filter));
+        return ResponseEntity.ok(personService.getAll(limit, offset, map));
     }
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<PersonResponse> getPerson(@Valid @PathVariable int id) {
-        PersonResponse person = personService.get(id);
-        return ResponseEntity.ok(person);
+        return ResponseEntity.ok(personService.get(id));
     }
 
     @DeleteMapping(path = "/{id}")
@@ -95,8 +66,7 @@ public class PeopleController {
 
     @PostMapping
     public ResponseEntity<PersonResponse> addPerson(@Valid @RequestBody PersonDTO personDTO) {
-        PersonResponse person = personService.add(personDTO);
-        return ResponseEntity.ok(person);
+        return ResponseEntity.ok(personService.add(personDTO));
     }
 
     @GetMapping("/{function}/height")
@@ -137,11 +107,6 @@ public class PeopleController {
     @ExceptionHandler(InvalidFilterException.class)
     public ResponseEntity<ErrorMessage> invalidFilter(InvalidFilterException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorMessage(ex.getMessage()));
-    }
-
-    @ExceptionHandler(PropertyReferenceException.class)
-    public ResponseEntity<ErrorMessage> invalidSort(PropertyReferenceException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorMessage("Not valid parameters:sort[" + ex.getPropertyName() + "]"));
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
