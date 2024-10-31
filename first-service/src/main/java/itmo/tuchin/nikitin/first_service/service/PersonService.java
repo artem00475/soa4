@@ -36,15 +36,9 @@ public class PersonService {
     private final CoordinatesRepository coordinatesRepository;
     private final LocationRepository locationRepository;
     private final ModelMapper modelMapper;
-    private final Pattern sortPattern = Pattern.compile("^sort\\[(.+)\\]$");
+    private final Pattern sortPattern = Pattern.compile("^sort\\[(.+)]$");
 
-    private Pair<String, Sort.Direction> parseSortParam(String k, String v) {
-        Fields.findByString(k);
-        v = v.toUpperCase().trim();
-        return Pair.of(k, Sort.Direction.valueOf(v));
-    }
-
-    public PeopleResponse getAll(int limit, int offset, Map<String, String> paramsMap) {
+    private Pair<List<Sort.Order>, List<Specification<Person>>> parseSortAndFilter(Map<String, String> paramsMap) {
         List<String> errors = new LinkedList<>();
         List<Sort.Order> sortList = new LinkedList<>();
         List<Specification<Person>> specificationList = new LinkedList<>();
@@ -52,8 +46,9 @@ public class PersonService {
             try {
                 Matcher isSortParam = sortPattern.matcher(k);
                 if (isSortParam.find()) {
-                    Pair<String, Sort.Direction> sortParam = parseSortParam(isSortParam.group(1), v);
-                    sortList.add(Sort.Order.by(sortParam.getLeft()).with(sortParam.getRight()));
+                    Fields field = Fields.findByString(isSortParam.group(1));
+                    Sort.Direction direction = Sort.Direction.valueOf(v.toUpperCase().trim());
+                    sortList.add(Sort.Order.by(field.toString()).with(direction));
                 } else if (!k.equals("limit") && !k.equals("offset")) {
                     specificationList.add(PersonFilter.getPersonSpecificationForField(k, v));
                 }
@@ -64,7 +59,19 @@ public class PersonService {
         if (!errors.isEmpty()) {
             throw new InvalidFilterException("Not valid parameters:" + errors.stream().distinct().collect(Collectors.joining(",")));
         }
-        Page<Person> personPage = personRepository.findAll(PersonFilter.filterBy(specificationList), PageRequest.of(offset, limit, Sort.by(sortList)));
+        return Pair.of(sortList, specificationList);
+    }
+
+    public PeopleResponse getAll(int limit, int offset, Map<String, String> paramsMap) {
+        Pair<List<Sort.Order>, List<Specification<Person>>> sortAndFilter = parseSortAndFilter(paramsMap);
+        Page<Person> personPage = personRepository.findAll(
+            PersonFilter.filterBy(sortAndFilter.getRight()),
+            PageRequest.of(
+                offset,
+                limit,
+                Sort.by(sortAndFilter.getLeft())
+            )
+        );
         List<PersonResponse> personResponses = new ArrayList<>();
         personPage.get().forEach(person -> personResponses.add(getResponse(person)));
         return new PeopleResponse(personResponses, (int) personPage.getTotalElements());
