@@ -6,15 +6,32 @@ import java.util.List;
 
 public class PeopleService {
 
+    private List<String> colors;
+    private List<String> countries;
+
     private final PeopleClient peopleClient;
 
     public PeopleService() {
         peopleClient = new PeopleClient();
     }
 
+    private List<String> getColors() {
+        if (colors == null) {
+            colors = peopleClient.getColors();
+        }
+        return colors;
+    }
+
+    private List<String> getCountries() {
+        if (countries == null) {
+            countries = peopleClient.getCountries();
+        }
+        return countries;
+    }
+
     public float getPercentage(String color) {
-        List<String> colors = peopleClient.getColors();
-        assert color != null;
+        List<String> colors = getColors();
+        assert color != null : "hair-color";
         if (color.isEmpty() | !colors.contains(color.toUpperCase())) {
             throw new IllegalArgumentException("hair-color");
         }
@@ -25,13 +42,13 @@ public class PeopleService {
     }
 
     public int getCount(String nationality, String color) {
-        List<String> colors = peopleClient.getColors();
-        assert color != null;
+        List<String> colors = getColors();
+        assert color != null : "hair-color";
         if (color.isEmpty() | !colors.contains(color.toUpperCase())) {
             throw new IllegalArgumentException("hair-color");
         }
-        List<String> countries = peopleClient.getCountries();
-        assert nationality != null;
+        List<String> countries = getCountries();
+        assert nationality != null : "nationality";
         if (nationality.isEmpty() | !countries.contains(nationality.toUpperCase())) {
             throw new IllegalArgumentException("nationality");
         }
