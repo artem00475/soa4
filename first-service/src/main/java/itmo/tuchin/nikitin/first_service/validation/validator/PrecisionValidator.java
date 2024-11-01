@@ -20,8 +20,12 @@ public class PrecisionValidator implements ConstraintValidator<Precision, String
         if (s == null) {
             return true;
         } else {
-            BigDecimal bigDecimal = new BigDecimal(s);
-            return bigDecimal.precision() <= precision;
+            try {
+                BigDecimal bigDecimal = new BigDecimal(s);
+                return bigDecimal.precision() <= precision;
+            } catch (Throwable e) {
+                return false;
+            }
         }
     }
 }
