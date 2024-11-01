@@ -2,6 +2,7 @@ package service;
 
 import client.PeopleClient;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class PeopleService {
@@ -29,28 +30,24 @@ public class PeopleService {
         return countries;
     }
 
-    public float getPercentage(String color) {
-        List<String> colors = getColors();
-        assert color != null : "hair-color";
-        if (color.isEmpty() | !colors.contains(color.toUpperCase())) {
+    public double getPercentage(String color) {
+        if (color == null || color.isEmpty() || !getColors().contains(color.toUpperCase())) {
             throw new IllegalArgumentException("hair-color");
         }
         int total = peopleClient.getTotal();
-        int countByColor = peopleClient.getCountByHairColor(color);
-        float percent = (float) countByColor / total * 100;
-        return percent;
+        return total == 0 ? 0.0 : (double) peopleClient.getCountByHairColor(color) / total * 100;
     }
 
     public int getCount(String nationality, String color) {
-        List<String> colors = getColors();
-        assert color != null : "hair-color";
-        if (color.isEmpty() | !colors.contains(color.toUpperCase())) {
-            throw new IllegalArgumentException("hair-color");
+        List<String> errors = new LinkedList<>();
+        if (color == null || color.isEmpty() || !getColors().contains(color.toUpperCase())) {
+            errors.add("hair-color");
         }
-        List<String> countries = getCountries();
-        assert nationality != null : "nationality";
-        if (nationality.isEmpty() | !countries.contains(nationality.toUpperCase())) {
-            throw new IllegalArgumentException("nationality");
+        if (nationality == null || nationality.isEmpty() || !getCountries().contains(nationality.toUpperCase())) {
+            errors.add("nationality");
+        }
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join(",", errors));
         }
         return peopleClient.getCountByNationalityAndHairColor(nationality, color);
     }
