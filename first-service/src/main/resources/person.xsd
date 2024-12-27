@@ -71,7 +71,7 @@
     <xs:element name="addPersonResponse">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="flat" type="tns:PersonResponse" maxOccurs="1"/>
+                <xs:element name="person" type="tns:PersonResponse" maxOccurs="1"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
