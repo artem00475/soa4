@@ -23,8 +23,10 @@ public class PeopleEndpoint {
     @ResponsePayload
     public GetColorResponse getColors() {
         GetColorResponse response = new GetColorResponse();
-        List<ColorEnum> data = response.getData().getColor();
+        ColorsResponse colorsResponse = new ColorsResponse();
+        List<ColorEnum> data = colorsResponse.getColor();
         data.addAll(Arrays.stream(ColorEnum.values()).toList());
+        response.setData(colorsResponse);
 
         return response;
     }
@@ -33,8 +35,10 @@ public class PeopleEndpoint {
     @ResponsePayload
     public GetCountryResponse getCountry() {
         GetCountryResponse response = new GetCountryResponse();
-        List<CountryEnum> data = response.getData().getCountry();
+        CountriesResponse countriesResponse = new CountriesResponse();
+        List<CountryEnum> data = countriesResponse.getCountry();
         data.addAll(Arrays.stream(CountryEnum.values()).toList());
+        response.setData(countriesResponse);
 
         return response;
     }
