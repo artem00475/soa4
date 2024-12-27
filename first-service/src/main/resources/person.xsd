@@ -163,8 +163,20 @@
         </xs:sequence>
     </xs:complexType>
 
+    <xs:simpleType name="customDouble">
+        <xs:restriction base="xs:decimal">
+            <xs:totalDigits value="16"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="customFloat">
+        <xs:restriction base="xs:decimal">
+            <xs:totalDigits value="7"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="coordinatesX">
-        <xs:restriction base="xs:double">
+        <xs:restriction base="tns:customDouble">
             <xs:maxInclusive value="682"/>
         </xs:restriction>
     </xs:simpleType>
@@ -198,8 +210,8 @@
 
     <xs:complexType name="LocationDTO">
         <xs:sequence>
-            <xs:element name="x" type="xs:float" minOccurs="0"/>
-            <xs:element name="y" type="xs:double" minOccurs="0"/>
+            <xs:element name="x" type="tns:customFloat" minOccurs="0"/>
+            <xs:element name="y" type="tns:customDouble" minOccurs="0"/>
             <xs:element name="name" type="tns:notEmptyValue" minOccurs="0"/>
         </xs:sequence>
     </xs:complexType>
