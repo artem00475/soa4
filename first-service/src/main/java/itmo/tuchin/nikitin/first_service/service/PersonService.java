@@ -1,13 +1,9 @@
 package itmo.tuchin.nikitin.first_service.service;
 
-import itmo.tuchin.nikitin.first_service.dto.*;
 import itmo.tuchin.nikitin.first_service.entity.*;
 import itmo.tuchin.nikitin.first_service.exceptions.InvalidFilterException;
-import itmo.tuchin.nikitin.first_service.repository.CoordinatesRepository;
-import itmo.tuchin.nikitin.first_service.repository.LocationRepository;
-import itmo.tuchin.nikitin.first_service.repository.PersonRepository;
-import itmo.tuchin.nikitin.first_service.specification.Fields;
-import itmo.tuchin.nikitin.first_service.specification.PersonFilter;
+import itmo.tuchin.nikitin.first_service.repository.*;
+import itmo.tuchin.nikitin.first_service.specification.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -20,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+import se.ifmo.ru.firstservice.person.*;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -62,7 +59,7 @@ public class PersonService {
         return Pair.of(sortList, specificationList);
     }
 
-    public PeopleResponse getAll(int limit, int offset, Map<String, String> paramsMap) {
+    public GetPeopleResponse getAll(int limit, int offset, Map<String, String> paramsMap) {
         Pair<List<Sort.Order>, List<Specification<Person>>> sortAndFilter = parseSortAndFilter(paramsMap);
         Page<Person> personPage = personRepository.findAll(
             PersonFilter.filterBy(sortAndFilter.getRight()),
@@ -72,9 +69,12 @@ public class PersonService {
                 Sort.by(sortAndFilter.getLeft())
             )
         );
-        List<PersonResponse> personResponses = new ArrayList<>();
-        personPage.get().forEach(person -> personResponses.add(getResponse(person)));
-        return new PeopleResponse(personResponses, (int) personPage.getTotalElements());
+        PeopleResponse peopleResponse = new PeopleResponse();
+        personPage.get().forEach(person -> peopleResponse.getPerson().add(getResponse(person)));
+        GetPeopleResponse getPeopleResponse = new GetPeopleResponse();
+        getPeopleResponse.setTotal((int) personPage.getTotalElements());
+        getPeopleResponse.setData(peopleResponse);
+        return getPeopleResponse;
     }
 
     private PersonResponse getResponse(@NotNull Person person) {
@@ -111,7 +111,7 @@ public class PersonService {
         }
     }
 
-    public void patch(int id, PersonUpdateDTO personUpdateDTO) {
+    public void patch(int id, PersonPatchDTO personUpdateDTO) {
         Optional<Person> optionalPerson = personRepository.findPersonById(id);
         if (optionalPerson.isEmpty()) {
             throw new EntityNotFoundException();

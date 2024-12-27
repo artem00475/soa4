@@ -1,10 +1,7 @@
 package itmo.tuchin.nikitin.first_service.controller;
 
-import itmo.tuchin.nikitin.first_service.entity.Color;
-import itmo.tuchin.nikitin.first_service.entity.Country;
 import itmo.tuchin.nikitin.first_service.service.PersonService;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.ws.server.endpoint.annotation.Endpoint;
 import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
 import org.springframework.ws.server.endpoint.annotation.RequestPayload;
@@ -19,14 +16,13 @@ import java.util.List;
 public class PeopleEndpoint {
     private static final String NAMESPACE_URI = "http://se/ifmo/ru/firstservice/person";
     private final PersonService personService;
-    private final ModelMapper modelMapper;
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getColorRequest")
     @ResponsePayload
     public GetColorResponse getColors() {
         GetColorResponse response = new GetColorResponse();
-        List<ColorEnum> data = response.getData();
-        data.addAll(Arrays.stream(Color.values()).map(value -> ColorEnum.fromValue(value.name())).toList());
+        List<ColorEnum> data = response.getData().getColor();
+        data.addAll(Arrays.stream(ColorEnum.values()).toList());
 
         return response;
     }
@@ -35,8 +31,8 @@ public class PeopleEndpoint {
     @ResponsePayload
     public GetCountryResponse getCountry() {
         GetCountryResponse response = new GetCountryResponse();
-        List<CountryEnum> data = response.getData();
-        data.addAll(Arrays.stream(Country.values()).map(value -> CountryEnum.fromValue(value.name())).toList());
+        List<CountryEnum> data = response.getData().getCountry();
+        data.addAll(Arrays.stream(CountryEnum.values()).toList());
 
         return response;
     }
@@ -45,7 +41,7 @@ public class PeopleEndpoint {
     @ResponsePayload
     public GetPersonResponse getPerson(@RequestPayload GetPersonRequest request) {
         GetPersonResponse response = new GetPersonResponse();
-        response.setPerson(modelMapper.map(personService.get(request.getId()), PersonResponse.class));
+        response.setPerson(personService.get(request.getId()));
 
         return response;
     }
@@ -54,7 +50,7 @@ public class PeopleEndpoint {
     @ResponsePayload
     public AddPersonResponse addPerson(@RequestPayload AddPersonRequest request) {
         AddPersonResponse response = new AddPersonResponse();
-        response.setPerson(modelMapper.map(personService.add(modelMapper.map(request.getPerson(), itmo.tuchin.nikitin.first_service.dto.PersonDTO.class)), PersonResponse.class));
+        response.setPerson(personService.add(request.getPerson()));
 
         return response;
     }
