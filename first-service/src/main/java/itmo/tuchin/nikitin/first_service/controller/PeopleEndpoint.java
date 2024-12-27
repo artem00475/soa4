@@ -58,4 +58,35 @@ public class PeopleEndpoint {
 
         return response;
     }
+
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "updatePersonRequest")
+    @ResponsePayload
+    public void updatePerson(@RequestPayload UpdatePersonRequest request) {
+        personService.update(request.getId(), modelMapper.map(request.getPerson(), itmo.tuchin.nikitin.first_service.dto.PersonDTO.class));
+    }
+
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "patchPersonRequest")
+    @ResponsePayload
+    public void patchPerson(@RequestPayload PatchPersonRequest request) {
+        personService.patch(request.getId(), modelMapper.map(request.getPerson(), itmo.tuchin.nikitin.first_service.dto.PersonUpdateDTO.class));
+    }
+
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "deletePersonRequest")
+    @ResponsePayload
+    public void deletePerson(@RequestPayload DeletePersonRequest request) {
+        personService.delete(request.getId());
+    }
+
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "heightOperationRequest")
+    @ResponsePayload
+    public HeightOperationResponse aggregateHeight(@RequestPayload HeightOperationRequest request) {
+        HeightOperationResponse response = new HeightOperationResponse();
+        response.setValue(switch (request.getFunction()) {
+            case "count" -> personService.countHeight(request.getHeight());
+            case "average" -> personService.averageHeight();
+            default -> "0";
+        });
+
+        return response;
+    }
 }
