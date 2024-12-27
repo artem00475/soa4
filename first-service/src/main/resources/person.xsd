@@ -27,8 +27,7 @@
     <xs:element name="getPeopleRequest">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="sort" type="xs:string" maxOccurs="unbounded" minOccurs="0"/>
-                <xs:element name="filter" type="xs:string" maxOccurs="unbounded" minOccurs="0"/>
+                <xs:element name="queryParams" type="xs:string" maxOccurs="unbounded" minOccurs="0"/>
                 <xs:element name="offset" type="xs:int" minOccurs="0"/>
                 <xs:element name="limit" type="xs:int" minOccurs="0"/>
             </xs:sequence>

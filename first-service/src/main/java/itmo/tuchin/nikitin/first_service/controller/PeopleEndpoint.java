@@ -9,7 +9,9 @@ import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
 import se.ifmo.ru.firstservice.person.*;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Endpoint
 @RequiredArgsConstructor
@@ -84,5 +86,20 @@ public class PeopleEndpoint {
         });
 
         return response;
+    }
+
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getPeopleRequest")
+    @ResponsePayload
+    public GetPeopleResponse getPeople(@RequestPayload GetPeopleRequest request) {
+        Map<String, String> map = new HashMap<>();
+        request.getQueryParams().forEach(query -> {
+            String[] pair = query.split("=");
+            map.put(pair[0], pair[1]);
+        });
+        return personService.getAll(
+                request.getLimit(),
+                request.getOffset(),
+                map
+        );
     }
 }
