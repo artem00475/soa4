@@ -58,13 +58,13 @@ public class PeopleEndpoint {
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "updatePersonRequest")
     @ResponsePayload
     public void updatePerson(@RequestPayload UpdatePersonRequest request) {
-        personService.update(request.getId(), modelMapper.map(request.getPerson(), itmo.tuchin.nikitin.first_service.dto.PersonDTO.class));
+        personService.update(request.getId(), request.getPerson());
     }
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "patchPersonRequest")
     @ResponsePayload
     public void patchPerson(@RequestPayload PatchPersonRequest request) {
-        personService.patch(request.getId(), modelMapper.map(request.getPerson(), itmo.tuchin.nikitin.first_service.dto.PersonUpdateDTO.class));
+        personService.patch(request.getId(), request.getPerson());
     }
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "deletePersonRequest")

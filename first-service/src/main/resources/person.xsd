@@ -101,7 +101,7 @@
     <xs:element name="deletePersonRequest">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="id" type="xs:string"/>
+                <xs:element name="id" type="xs:int"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -117,13 +117,15 @@
         </xs:complexType>
     </xs:element>
 
-<!--    Type    -->
-    <xs:complexType name="AggregateDTO">
-        <xs:sequence>
-            <xs:element name="value" type="xs:string" />
-        </xs:sequence>
-    </xs:complexType>
+    <xs:element name="heightOperationResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="value" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
+<!--    Type    -->
     <xs:simpleType name="ColorEnum">
         <xs:restriction base="xs:string">
             <xs:enumeration value="RED"/>
