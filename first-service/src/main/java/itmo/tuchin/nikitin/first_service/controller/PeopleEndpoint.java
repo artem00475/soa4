@@ -63,20 +63,29 @@ public class PeopleEndpoint {
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "updatePersonRequest")
     @ResponsePayload
-    public void updatePerson(@RequestPayload UpdatePersonRequest request) {
+    public UpdatePersonResponse updatePerson(@RequestPayload UpdatePersonRequest request) {
         personService.update(request.getId(), request.getPerson());
+        UpdatePersonResponse response = new UpdatePersonResponse();
+        response.setStatus("OK");
+        return response;
     }
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "patchPersonRequest")
     @ResponsePayload
-    public void patchPerson(@RequestPayload PatchPersonRequest request) {
+    public PatchPersonResponse patchPerson(@RequestPayload PatchPersonRequest request) {
         personService.patch(request.getId(), request.getPerson());
+        PatchPersonResponse response = new PatchPersonResponse();
+        response.setStatus("OK");
+        return response;
     }
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "deletePersonRequest")
     @ResponsePayload
-    public void deletePerson(@RequestPayload DeletePersonRequest request) {
+    public DeletePersonResponse deletePerson(@RequestPayload DeletePersonRequest request) {
         personService.delete(request.getId());
+        DeletePersonResponse response = new DeletePersonResponse();
+        response.setStatus("OK");
+        return response;
     }
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "heightOperationRequest")
@@ -96,7 +105,7 @@ public class PeopleEndpoint {
     @ResponsePayload
     public GetPeopleResponse getPeople(@RequestPayload GetPeopleRequest request) {
         Map<String, String> map = new HashMap<>();
-        request.getQueryParams().forEach(query -> {
+        request.getQueryParams().getParam().forEach(query -> {
             String[] pair = query.split("=");
             map.put(pair[0], pair[1]);
         });

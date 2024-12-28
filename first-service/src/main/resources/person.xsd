@@ -27,9 +27,9 @@
     <xs:element name="getPeopleRequest">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="queryParams" type="xs:string" maxOccurs="unbounded" minOccurs="0"/>
-                <xs:element name="offset" type="xs:int" minOccurs="0"/>
-                <xs:element name="limit" type="xs:int" minOccurs="0"/>
+                <xs:element name="queryParams" type="tns:QueryParams"/>
+                <xs:element name="offset" type="xs:int"/>
+                <xs:element name="limit" type="xs:int"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -84,7 +84,13 @@
         </xs:complexType>
     </xs:element>
 
-    <xs:element name="updatePersonResponse"/>
+    <xs:element name="updatePersonResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="status" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
     <xs:element name="patchPersonRequest">
         <xs:complexType>
@@ -95,7 +101,13 @@
         </xs:complexType>
     </xs:element>
 
-    <xs:element name="patchPersonResponse"/>
+    <xs:element name="patchPersonResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="status" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
     <xs:element name="deletePersonRequest">
         <xs:complexType>
@@ -105,7 +117,13 @@
         </xs:complexType>
     </xs:element>
 
-    <xs:element name="deletePersonResponse"/>
+    <xs:element name="deletePersonResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="status" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
     <xs:element name="heightOperationRequest">
         <xs:complexType>
@@ -160,6 +178,12 @@
     <xs:complexType name="PeopleResponse">
         <xs:sequence>
             <xs:element name="person" type="tns:PersonResponse" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="QueryParams">
+        <xs:sequence>
+            <xs:element name="param" type="xs:string" maxOccurs="unbounded" minOccurs="0"/>
         </xs:sequence>
     </xs:complexType>
 
