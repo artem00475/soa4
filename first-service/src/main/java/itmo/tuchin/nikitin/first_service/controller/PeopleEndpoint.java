@@ -106,7 +106,7 @@ public class PeopleEndpoint {
     public GetPeopleResponse getPeople(@RequestPayload GetPeopleRequest request) {
         Map<String, String> map = new HashMap<>();
         request.getQueryParams().getParam().forEach(query -> {
-            String[] pair = query.split("=");
+            String[] pair = query.split("=", 2);
             map.put(pair[0], pair[1]);
         });
         return personService.getAll(
