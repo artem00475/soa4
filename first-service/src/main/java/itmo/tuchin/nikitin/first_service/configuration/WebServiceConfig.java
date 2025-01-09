@@ -27,14 +27,14 @@ public class WebServiceConfig extends WsConfigurerAdapter {
         MessageDispatcherServlet servlet = new MessageDispatcherServlet();
         servlet.setApplicationContext(applicationContext);
         servlet.setTransformWsdlLocations(true);
-        return new ServletRegistrationBean<>(servlet, "/ws/*");
+        return new ServletRegistrationBean<>(servlet, "/*");
     }
 
     @Bean(name = "person")
     public DefaultWsdl11Definition defaultWsdl11Definition(XsdSchema personSchema) {
         DefaultWsdl11Definition wsdl11Definition = new DefaultWsdl11Definition();
         wsdl11Definition.setPortTypeName("PersonPort");
-        wsdl11Definition.setLocationUri("/ws");
+        wsdl11Definition.setLocationUri("/");
         wsdl11Definition.setTargetNamespace("http://se/ifmo/ru/firstservice/person");
         wsdl11Definition.setSchema(personSchema);
         return wsdl11Definition;

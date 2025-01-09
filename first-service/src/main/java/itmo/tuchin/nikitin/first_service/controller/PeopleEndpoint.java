@@ -111,8 +111,8 @@ public class PeopleEndpoint {
             map.put(pair[0], pair[1]);
         });
         return personService.getAll(
-                request.getLimit(),
-                request.getOffset(),
+                request.getLimit().intValue(),
+                request.getOffset().intValue(),
                 map
         );
     }

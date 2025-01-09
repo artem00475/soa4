@@ -6,17 +6,16 @@ import org.springframework.ws.soap.server.endpoint.interceptor.PayloadValidating
 import org.xml.sax.SAXParseException;
 
 import javax.xml.namespace.QName;
-import javax.xml.transform.TransformerException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PayloadValidator extends PayloadValidatingInterceptor {
-    private final Pattern elementPattern = Pattern.compile("'tns:(.+)'");
+    private final Pattern elementPattern = Pattern.compile("'ns0:(.+)'");
 
     @Override
-    protected boolean handleRequestValidationErrors(MessageContext messageContext, SAXParseException[] errors) throws TransformerException {
+    protected boolean handleRequestValidationErrors(MessageContext messageContext, SAXParseException[] errors) {
         for(SAXParseException error : errors) {
             this.logger.warn("XML validation error on request: " + error.getMessage());
         }

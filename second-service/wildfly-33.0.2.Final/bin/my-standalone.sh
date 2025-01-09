@@ -349,6 +349,8 @@ while true; do
       # Execute the JVM in the background
       eval \"$JAVA\" -D\"[Standalone]\" $JAVA_OPTS \
          \"-Dorg.jboss.boot.log.file="$JBOSS_LOG_DIR"/server.log\" \
+         	\"-Djavax.net.ssl.trustStore="$JBOSS_CONFIG_DIR"/application.truststore\" \
+            	\"-Djavax.net.ssl.trustStorePassword=password\" \
          \"-Dlogging.configuration=file:"$JBOSS_CONFIG_DIR"/logging.properties\" \
          -jar \""$JBOSS_HOME"/jboss-modules.jar\" \
          $MODULE_OPTS \
