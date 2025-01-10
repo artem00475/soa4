@@ -27,7 +27,7 @@
     <xs:element name="getPeopleRequest">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="queryParams" type="tns:notEmptyValue"/>
+                <xs:element name="queryParams" type="xs:string"/>
                 <xs:element name="offset" type="xs:nonNegativeInteger"/>
                 <xs:element name="limit" type="xs:positiveInteger"/>
             </xs:sequence>
@@ -37,7 +37,7 @@
     <xs:element name="getPeopleResponse">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="data" type="tns:PeopleResponse"/>
+                <xs:element name="data" type="tns:PeopleResponse" minOccurs="0"/>
                 <xs:element name="total" type="xs:int"/>
             </xs:sequence>
         </xs:complexType>

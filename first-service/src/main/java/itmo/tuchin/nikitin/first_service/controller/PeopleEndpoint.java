@@ -108,7 +108,9 @@ public class PeopleEndpoint {
         String[] params = request.getQueryParams().split("&");
         Arrays.stream(params).toList().forEach(query -> {
             String[] pair = query.split("=", 2);
-            map.put(pair[0], pair[1]);
+            if (pair.length == 2) {
+                map.put(pair[0], pair[1]);
+            }
         });
         return personService.getAll(
                 request.getLimit().intValue(),
