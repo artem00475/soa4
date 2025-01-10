@@ -1,0 +1,701 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="5f9c2e3a-2fc4-4f83-9c69-d2916d2b1dc5" basePath="/api/v1">
+		<http:listener-connection host="0.0.0.0" port="8080" protocol="HTTPS">
+			<tls:context >
+				<tls:trust-store type="jks" />
+				<tls:key-store type="jks" path="server.jks" alias="localhost" keyPassword="certificate" password="certificate" />
+			</tls:context>
+
+		</http:listener-connection>
+	</http:listener-config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="2afd43e8-0c8a-41e4-b8a4-50513167c347" >
+		<wsc:connection wsdlLocation="http://172.20.0.3:8082/api/v1/person.wsdl" address="http://172.20.0.3:8082/api/v1/" service="PersonPortService" port="PersonPortSoap11">
+			<wsc:web-service-security actor="http://schemas.xmlsoap.org/soap/actor/next">
+			</wsc:web-service-security>
+		</wsc:connection>
+	</wsc:config>
+	<flow name="getPerson" doc:id="d1aeba53-7efb-4547-ac95-d8522f963e62" >
+		<http:listener doc:name="Listener" doc:id="b04dbd82-95ba-495b-8022-17a5ba06c68d" config-ref="HTTP_Listener_config" path="/people/{id}" allowedMethods="GET">
+			<http:response >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]'>
+				<http:body ><![CDATA[#[payload]]]></http:body>
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="1398ad64-ad64-40b4-b7d0-a25e3c776124">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml
+---
+{
+	ns0#getPersonRequest: {
+		ns0#id: attributes.uriParams.id as Number
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume doc:name="Consume" doc:id="d512f24d-1e35-439a-9c9c-fa76e020aaa2" config-ref="Web_Service_Consumer_Config" operation="getPerson">
+			<wsc:message-customizations forceXMLProlog="true" />
+
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message" doc:id="c005c1fa-35b1-44b4-84ec-7cb81f7bae38" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output application/json
+---
+{
+	"data": payload.body.ns0#getPersonResponse.ns0#person
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d9561104-b74c-492c-a824-803c7ac74731" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="8c607f1a-2420-4d1e-b390-a1e5d28c8c93" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+	<flow name="getColor" doc:id="e56278d6-23d5-41ed-96f7-a26dce6e2128">
+		<http:listener doc:name="Listener" doc:id="593e2cc0-85c1-4844-b0eb-849fe852d845" config-ref="HTTP_Listener_config" path="/color" allowedMethods="GET, OPTIONS">
+			<http:response>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]'>
+				<http:body><![CDATA[#[payload]]]></http:body>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="7986decf-fd24-4cdb-840e-02ad263bb47b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml
+---
+{
+	ns0#getColorRequest: {
+		
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="getColor" doc:name="Consume" doc:id="f707550d-35c3-4c6f-8871-eec0f6930d8e" config-ref="Web_Service_Consumer_Config">
+			<wsc:message-customizations forceXMLProlog="true" />
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message1" doc:id="6f4a8877-44f4-4f6b-bb1e-685f800ce12d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output application/json
+---
+{
+	"data": payload.body.ns0#getColorResponse.ns0#data.*ns0#color map(item, index) -> item
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a95202df-3128-4e82-9c10-286961d02565" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="f00d39a0-3998-4711-a22b-9389756f496e">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="getCountry" doc:id="dddcdaf7-be14-4f30-983a-f6bb9339c06d">
+		<http:listener doc:name="Listener" doc:id="e7eda4ce-cc4f-42e1-8fd0-b2d157e33b20" config-ref="HTTP_Listener_config" path="/country" allowedMethods="GET, OPTIONS">
+			<http:response>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]'>
+				<http:body><![CDATA[#[payload]]]></http:body>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="36a59687-731b-43a2-8c7e-7758a35a302a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml
+---
+{
+	ns0#getCountryRequest: {
+		
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="getCountry" doc:name="Consume" doc:id="a7e57c74-f82a-45ea-bbb8-ec91869a7321" config-ref="Web_Service_Consumer_Config">
+			<wsc:message-customizations forceXMLProlog="true" />
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message1" doc:id="a69a8803-4d8e-4f89-ba66-87fc7a153c77">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output application/json
+---
+{
+	"data": payload.body.ns0#getCountryResponse.ns0#data.*ns0#country map(item, index) -> item
+	
+	}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="78ec00d9-0518-4673-9c4f-9c88bb083619" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="45cdb1ee-98a3-4278-bb38-956f506f1f4f">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="deletePerson" doc:id="fe449515-8173-4302-a939-957d8e5e1169">
+		<http:listener doc:name="Listener" doc:id="1cb61f27-8328-4b0e-9079-683a74bc6a5e" config-ref="HTTP_Listener_config" path="/people/{id}" allowedMethods="DELETE">
+			<http:response statusCode="204">
+				<http:body ><![CDATA[payload]]></http:body>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]'>
+				<http:body><![CDATA[#[payload]]]></http:body>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="9d77d218-5a38-4176-bf71-a0857ff90597">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml
+---
+{
+	ns0#deletePersonRequest: {
+		ns0#id: attributes.uriParams.id as Number
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="deletePerson" doc:name="Consume" doc:id="47f30ef7-a9b7-46ea-a5e0-e6451cc94a5b" config-ref="Web_Service_Consumer_Config">
+			<wsc:message-customizations forceXMLProlog="true" />
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message" doc:id="1a3ef410-dc5b-4310-8c6d-605fc4094f18" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b72c75c3-2311-4e82-bc61-52846df1bc34" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="aba481ff-952f-492f-a79b-ac5dd58e638a">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="updatePerson" doc:id="25094834-7eab-4ade-84f2-97ff43b141fd">
+		<http:listener doc:name="Listener" doc:id="614bad90-947b-408d-bb80-ca327c118f51" config-ref="HTTP_Listener_config" path="/people/{id}" allowedMethods="PUT">
+			<http:response statusCode="204">
+				<http:body><![CDATA[payload]]></http:body>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]'>
+				<http:body><![CDATA[#[payload]]]></http:body>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="7b691fff-9dd2-45e4-8703-1a62a17abf71">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml skipNullOn="everywhere"
+---
+{
+	ns0#updatePersonRequest: {
+		ns0#id: attributes.uriParams.id as Number,
+		ns0#person: {
+			ns0#name: payload.name,
+			ns0#coordinates: {
+				ns0#x: payload.coordinates.x,
+				ns0#y: payload.coordinates.y,
+			},
+			ns0#height: payload.height,
+			ns0#eyeColor: payload.eyeColor,
+			ns0#hairColor: payload.hairColor,
+			ns0#nationality: payload.nationality,
+			ns0#location: {
+				ns0#x: payload.location.x,
+				ns0#y: payload.location.y,
+				ns0#name: payload.location.name
+			},
+		}
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="updatePerson" doc:name="Consume" doc:id="5f5c6eb0-012b-414d-ba7e-ac031ec87e21" config-ref="Web_Service_Consumer_Config">
+			<wsc:message-customizations forceXMLProlog="true" />
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message1" doc:id="149682f7-ed20-4821-83af-aa3a57f540df">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="862fb9a4-37e0-42c6-a02f-96b70d6c8cbd" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="4213c3f2-2085-4eec-ba25-27f4e17b7040">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="patchPerson" doc:id="eef21153-9ddc-4fe6-a5aa-9cc0961578f9" >
+		<http:listener doc:name="Listener" doc:id="fd08ed25-7091-4b2b-a7c2-6c3e5f8c086c" config-ref="HTTP_Listener_config" path="/people/{id}" allowedMethods="PATCH">
+			<http:response statusCode="204" >
+				<http:body ><![CDATA[payload]]></http:body>
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]' >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="d8268846-3774-4f43-a550-84df3ef865cb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml skipNullOn="everywhere"
+---
+{
+	ns0#patchPersonRequest: {
+		ns0#id: attributes.uriParams.id as Number,
+		ns0#person: {
+			ns0#name: payload.name,
+			ns0#coordinates: {
+				ns0#x: payload.coordinates.x,
+				ns0#y: payload.coordinates.y,
+			},
+			ns0#height: payload.height,
+			ns0#eyeColor: payload.eyeColor,
+			ns0#hairColor: payload.hairColor,
+			ns0#nationality: payload.nationality,
+			ns0#location: {
+				ns0#x: payload.location.x,
+				ns0#y: payload.location.y,
+				ns0#name: payload.location.name
+			},
+		}
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="patchPerson" doc:name="Consume" doc:id="10b297bb-9fcf-43c7-86f0-592a5571d52f" config-ref="Web_Service_Consumer_Config" >
+			<wsc:message-customizations forceXMLProlog="true" />
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message1" doc:id="1f201297-07b9-4a30-9164-b5dde7b8bc28" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="35d817da-6cca-4393-851b-7fb3c97d3e68" type="ANY" >
+				<ee:transform doc:name="Transform Message" doc:id="6c708447-629d-4727-ba9a-a2210b919143" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="addPerson" doc:id="24cc9c89-e77c-461a-8bb0-7c62b9b43985" >
+		<http:listener doc:name="Listener" doc:id="e37e0f2a-b0f4-4128-afd8-9c0a473bf169" config-ref="HTTP_Listener_config" path="/people" allowedMethods="POST">
+			<http:response statusCode="200" >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]' >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="eec0938b-bf12-49ec-a528-f76dd59e4381" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml skipNullOn="everywhere"
+---
+{
+	ns0#addPersonRequest: {
+		ns0#person: {
+			ns0#name: payload.name,
+			ns0#coordinates: {
+				ns0#x: payload.coordinates.x,
+				ns0#y: payload.coordinates.y,
+			},
+			ns0#height: payload.height,
+			ns0#eyeColor: payload.eyeColor,
+			ns0#hairColor: payload.hairColor,
+			ns0#nationality: payload.nationality,
+			ns0#location: {
+				ns0#x: payload.location.x,
+				ns0#y: payload.location.y,
+				ns0#name: payload.location.name
+			},
+		}
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="addPerson" doc:name="Consume" doc:id="e1fc9eda-c7cf-4289-a2f7-0df0a3a7a843" config-ref="Web_Service_Consumer_Config" >
+			<wsc:message-customizations forceXMLProlog="true" />
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message1" doc:id="bedd3f9c-25db-414d-ad46-e4df09cf709e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output application/json
+---
+{
+	"data": payload.body.ns0#addPersonResponse.ns0#person
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="5a6e7b03-12d2-4f15-a0f4-abc99a834118" type="ANY" >
+				<ee:transform doc:name="Transform Message" doc:id="a8c4e7ee-80d4-471b-a9b9-3073e1f3c06a" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="operation" doc:id="a6422e14-d82a-4d52-a45c-5d94a9206728" >
+		<http:listener doc:name="Listener" doc:id="9b4ffe17-e765-4213-a36b-4d91d118350c" config-ref="HTTP_Listener_config" path="/people/{function}/height" allowedMethods="GET, OPTIONS">
+			<http:response statusCode="200" >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]' >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="809b1764-87bf-46ae-9197-b583280e427a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml skipNullOn="everywhere"
+---
+{
+	ns0#heightOperationRequest: {
+		ns0#function: attributes.uriParams.function as String,
+		ns0#height: (attributes.queryParams.height as Number) default 0
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="heightOperation" doc:name="Consume" doc:id="670452a9-b5cd-43bc-a58c-702a17fb611a" config-ref="Web_Service_Consumer_Config" >
+			<wsc:message-customizations forceXMLProlog="true" />
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message1" doc:id="034c3aca-e5bf-4803-b062-dfd1c8143650" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0ns ns0 http://se/ifmo/ru/firstservice/person
+
+output application/json
+---
+{
+	value: payload.body.ns0#heightOperationResponse.ns0#value
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="97a3360d-fe65-405f-8235-49ce091c55ce" type="ANY" >
+				<ee:transform doc:name="Transform Message" doc:id="a638b227-cd49-47b8-aa36-577491ea2ef6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="OptionsPerson" doc:id="6645a4d6-2520-4a94-8238-09a9fb8f22d1" >
+		<http:listener doc:name="Listener" doc:id="9e1c02dc-5096-4f9c-814f-5afb83ee8efa" config-ref="HTTP_Listener_config" path="/people/{id}">
+			<http:response >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="f3dc5d43-e91d-45d0-8305-545ced564bd8" />
+	</flow>
+	<flow name="getAll" doc:id="8504d793-2328-41e2-9631-e55e551ad95d" >
+		<http:listener doc:name="Listener" doc:id="8c90f2a2-d8a0-4b10-a2cb-1c434f0dc6d9" config-ref="HTTP_Listener_config" path="/people" allowedMethods="GET">
+			<http:response statusCode="200" >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode='#[read(error.exception.cause.detail, "text/xml").detail.code]' >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="9feab90e-6dd4-4cbf-8375-778e21693c51" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output text/xml skipNullOn="everywhere"
+---
+{
+	ns0#getPeopleRequest: {
+		ns0#queryParams: (attributes.queryString as String) default "id=>0",
+		ns0#offset: (attributes.queryParams.offset as Number) default 0,
+		ns0#limit: (attributes.queryParams.limit as Number) default 10
+	},
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="getPeople" doc:name="Consume" doc:id="9eff5785-0466-4738-95bc-3f83133ae765" config-ref="Web_Service_Consumer_Config" >
+			<wsc:message-customizations forceXMLProlog="true" />
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message1" doc:id="2bd1fcc0-8593-43a1-bea5-7b044affa02f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+ns ns0 http://se/ifmo/ru/firstservice/person
+output application/json
+---
+{
+	"data": (payload.body.ns0#getPeopleResponse.ns0#data.*ns0#person map (item, index) -> item) default [],
+	"total": payload.body.ns0#getPeopleResponse.ns0#total
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d820adeb-3ec2-4d5e-8e7d-ef13ed3d514e" type="ANY" >
+				<ee:transform doc:name="Transform Message" doc:id="9d2115b7-0a4f-4e85-921b-47f476e8cc67" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0 output application/json
+var detail = read(error.exception.cause.detail, "text/xml")
+---
+{
+	"message": detail.detail.message
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="OptionsPeople" doc:id="0d280af2-2f1a-4260-9e49-836970dd8168" >
+		<http:listener doc:name="Listener" doc:id="bad71d2c-acb0-43f6-9c89-f6711e858ca4" config-ref="HTTP_Listener_config" path="/people" >
+			<http:response >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Access-Control-Allow-Origin" : "*",
+	"Access-Control-Allow-Methods" : "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS",
+	"Access-Control-Allow-Headers" : "*",
+	"Access-Control-Allow-Credentials" : "true"
+}]]]></http:headers>
+			</http:response>
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="58f12d68-a2f9-4f93-ae66-50fc88aff663" />
+	</flow>
+
+</mule>
